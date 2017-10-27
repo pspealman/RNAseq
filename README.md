@@ -9,6 +9,7 @@ for the Gresham lab and to make the most of the HPC environment.
 ## To Use:
 
 A. Necessary steps: 
+	
 	1. Define the SBATCH array size (line 2):
 		#SBATCH --array=0-N
 		Purpose: SBATCH needs to launch a number of runs equal 
