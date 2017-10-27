@@ -53,6 +53,7 @@ A. Necessary steps:
 		gz extension (ie. *.fastq), comment line 56 and uncomment line 57.
 	
 B. Optional Modifications:
+	
 	1. Reference Genome (line 35):
 		hisat_ref='N'
 		Purpose: Defines genome to align against.
