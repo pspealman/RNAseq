@@ -16,11 +16,17 @@ from Bio.Alphabet import IUPAC
 #set defaults
 paired_arg = '-u'
 adapter_list=[]
+polyG = False
 
 #collect arguments
 if (sys.argv[1] == '-h') or (sys.argv[1] == '-help'):
     print('scrape_adapter is designed to be used with fastq files.\nThese can be either in uncompressed of gzipped (".gz") formats.')
-    print('Invoke as:\n\tpython scrape_adapter.py -u [-p for paired end] -i fastq_file_name -o output_file_name')
+    print('Invoke as:\n\tpython scrape_adapter.py [-polyG] [-p] -i fastq_file_name -o output_file_name')
+    print('-------------------------------------------------------------------')
+    print('Optional Commands:')
+    print('-p : paired end reads')
+    print('-polyG : Alternative Runmode. Removes all reads with a polyG UMI.')
+    print('\t\tNo adapters are counted when using -polyG run mode.')
     print('')
     exit()
 
@@ -31,6 +37,8 @@ for arg in range(len(sys.argv)-1):
         infile_name = sys.argv[int(arg+1)]
     if sys.argv[arg] == '-o':
         outfile_name = sys.argv[int(arg+1)]
+    if sys.argv[arg] == '-polyG':
+        polyG = True
 
 #test to see if input is gzipped
 #if it is use zcat to make temp uncompressed file
@@ -49,10 +57,49 @@ if is_gzipped:
 if not is_gzipped:
     infile_o = (infile_name)
 
+# search for and remove instances where UMI is 'GGGGGG'
+def remove_polyG(infile_o):
+    infile = open(infile_o)
+    
+    
+    filter_polyG = 0
+    polyG_ct = 0
+    
+    for line in infile:
+
+        if filter_polyG != 0:
+            if filter_polyG == 3:
+                filter_polyG = 0
+                print(line)
+                print(filter_polyG)
+            if (filter_polyG > 0) and (filter_polyG < 3) :
+                filter_polyG+=1
+                print(line)
+                print(filter_polyG)
+                
+        if filter_polyG == 0:
+            if (line[0]=='@'):
+                s_line = line.strip()
+                adapter = s_line.rsplit(':',1)[1]
+                if ('GGGGGG' in adapter):
+                    filter_polyG = 1
+                    polyG_ct+=1
+                    print(line)
+                    print(filter_polyG)
+                    
+                if ('GGGGGG' not in adapter):
+                    outfile.write(line)
+                    
+            if (line[0]!='@') and (filter_polyG == 0):
+                    outfile.write(line)
+                
+
+    infile.close()
+    print('PolyG count: '+str(polyG_ct))
+
 # parse file keeping only highest frequency adapter
 def scrape_file(infile_o):
     infile = open(infile_o)
-    
     
     adapter_dict = {}
     high_score=0
@@ -106,19 +153,24 @@ def write_outadapter(adapter_list,runmode):
             outfile.write(outline)
 
 #actual command statements
-if paired_arg=='-u':
-    adapter_list = scrape_file(infile_o)
-    
-    if adapter_list:
-        outfile = open(outfile_name,'w')
-        write_outadapter(adapter_list,'fwd')
-
-if paired_arg=='-p':
-    adapter_list = scrape_file(infile_o)
+if not polyG:
+    if paired_arg=='-u':
+        adapter_list = scrape_file(infile_o)
         
-    if adapter_list:
-        outfile = open(outfile_name,'w')
-        write_outadapter(adapter_list,'rev')
+        if adapter_list:
+            outfile = open(outfile_name,'w')
+            write_outadapter(adapter_list,'fwd')
+    
+    if paired_arg=='-p':
+        adapter_list = scrape_file(infile_o)
+            
+        if adapter_list:
+            outfile = open(outfile_name,'w')
+            write_outadapter(adapter_list,'rev')
+
+if polyG:
+   outfile = open(outfile_name,'w')
+   remove_polyG(infile_o)
 
 #clean up
 outfile.close()
