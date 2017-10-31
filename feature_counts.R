@@ -13,7 +13,8 @@ setwd('..')
 bam_files=list.files(pattern = ("\\.bam$"),recursive=TRUE)
 
 #outputfile name: change "exp_counts.txt" to outputfilename of choice
-output_file="Counts.txt"
+#output_file="Counts.txt"
+output_file="Counts_All_Features.txt"
 
 #use featureCounts to count reads to count transcripts per gene
 exp_counts<-featureCounts(files=bam_files,annot.ext=args[1],useMetaFeatures=T,isGTFAnnotationFile=T,GTF.attrType="gene_name",strandSpecific=2,isPairedEnd=paired)
